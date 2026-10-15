@@ -19,7 +19,7 @@ export default function About() {
       />
 
       <section className="py-16">
-        <div className="mx-auto max-w-6xl px-4 grid lg:grid-cols-2 gap-12">
+        <div className="mx-auto max-w-6xl px-4 grid lg:grid-cols-2 gap-12 items-start">
           <div>
             <SectionEyebrow>Our story</SectionEyebrow>
             <SectionTitle>A school named for a larger idea of India</SectionTitle>
@@ -27,10 +27,27 @@ export default function About() {
               Jawahar Vidyalayam opened its gates in {school.established} at Aswaraopet with a handful of classrooms and the motto {school.motto} — Knowledge, Humility, Wisdom. We believe children deserve both high standards and a kind adult in the room.
             </p>
             <p className="mt-4 text-muted leading-relaxed">
-              Over the years we have grown into a full senior secondary school — Nursery to Class XII — without losing the feeling of a place where teachers still walk the corridors after the last bell. Our alumni sit in universities, studios, laboratories, and public service. We measure ourselves by the adults they become.
+              Over the years we have grown into a full school community without losing the feeling of a place where teachers still walk the corridors after the last bell. Our alumni sit in universities, studios, laboratories, and public service. We measure ourselves by the adults they become.
             </p>
           </div>
-          <img src={images.assembly} alt="School assembly" className="h-full min-h-[320px] object-cover rounded-sm" />
+
+          <div className="space-y-6 lg:justify-self-end w-full max-w-md">
+            <article className="bg-forest-deep text-white p-5 border border-cream-dark shadow-sm">
+              <div className="mx-auto mb-4 aspect-[4/5] w-full max-w-[260px] overflow-hidden rounded-sm bg-white">
+                <img
+                  src={images.founder}
+                  alt={school.founder.name}
+                  className="h-full w-full object-cover object-[center_15%]"
+                />
+              </div>
+              <p className="text-xs tracking-[0.2em] uppercase text-gold-light">Founder</p>
+              <h3 className="font-display text-3xl mt-2">{school.founder.name}</h3>
+              <p className="text-white/75 text-sm mt-1">{school.founder.title}</p>
+              <p className="mt-4 text-sm leading-relaxed text-white/85">{school.founder.message}</p>
+            </article>
+
+            <img src={images.assembly} alt="School assembly" className="h-full min-h-[240px] w-full object-cover rounded-sm" />
+          </div>
         </div>
       </section>
 

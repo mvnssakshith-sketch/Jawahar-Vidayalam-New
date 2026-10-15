@@ -9,6 +9,12 @@ export const school = {
   board: 'Telangana State Board',
   affiliationNo: 'TS/STATE/1986',
   schoolCode: '110428',
+  founder: {
+    name: 'Ramarao Santhapuri',
+    title: 'Founder of Jawahar Vidyalayam',
+    message:
+      'Jawahar Vidyalayam was founded with the belief that every child deserves quality education rooted in values, discipline, and opportunity. Under his guidance, the school grew into a place where academic excellence and character development go hand in hand.',
+  },
   classes: 'Nursery – Class X',
   medium: 'English',
   type: 'Co-educational Day School',
@@ -61,6 +67,7 @@ export const school = {
 export const images = {
   hero: '/images/hero.jpg',
   campus: '/images/campus.jpg',
+  founder: '/images/founder.jpg',
   principal: '/images/principal.jpg',
   chairman: '/images/md-praveen.png',
   classroom: '/images/classroom.jpg',
