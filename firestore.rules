@@ -1,0 +1,62 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+    function hasProfile() {
+      return signedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+    function role() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+    function isAdmin() {
+      return hasProfile() && role() == 'admin';
+    }
+    function isRole(r) {
+      return hasProfile() && role() == r;
+    }
+    function schoolData(col) {
+      return !(col in ['users', 'meta']);
+    }
+
+    // Login profiles: role + linked teacher/parent/student id. Managed by admin only.
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // Website settings.
+    match /meta/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /{col}/{docId} {
+      // Public website content; everything else needs a portal login.
+      allow read: if schoolData(col)
+        && (hasProfile() || col in ['notices', 'events', 'gallery', 'busRoutes']);
+
+      // Application tracking by exact Application ID.
+      allow get: if col == 'admissions';
+
+      // Public forms: online application, contact/enquiry, event registration.
+      allow create: if (col == 'admissions' && request.resource.data.status == 'Submitted')
+        || col in ['contacts', 'enquiries', 'eventRegistrations'];
+
+      allow write: if schoolData(col) && isAdmin();
+
+      allow write: if isRole('teacher') && col in [
+        'attendance', 'marks', 'homework', 'assignments', 'studyMaterials',
+        'notices', 'leaveRequests', 'messages'
+      ];
+
+      allow create: if (isRole('parent') || isRole('student'))
+        && col in ['leaveRequests', 'messages', 'payments'];
+
+      allow update: if (isRole('parent') || isRole('student')) && col == 'fees'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+    }
+  }
+}

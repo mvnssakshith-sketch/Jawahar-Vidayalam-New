@@ -633,10 +633,10 @@ export function AdminSettings() {
       <button
         className="mt-8 text-sm text-red-800"
         onClick={() => {
-          if (window.confirm('Reset all demo data?')) reset()
+          if (window.confirm('This replaces ALL school data in Firebase with the demo data. Continue?')) reset()
         }}
       >
-        Reset demo database
+        Reset Firebase data to demo
       </button>
     </div>
   )

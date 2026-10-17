@@ -3,14 +3,16 @@ import { PageHero } from '../components/ui/Blocks'
 import { useSchool } from '../context/SchoolContext'
 
 export default function Track() {
-  const { db } = useSchool()
+  const { findApplication } = useSchool()
   const [id, setId] = useState('')
   const [result, setResult] = useState(undefined)
+  const [searching, setSearching] = useState(false)
 
-  function search(e) {
+  async function search(e) {
     e.preventDefault()
-    const found = db.admissions.find((a) => a.id.toLowerCase() === id.trim().toLowerCase())
-    setResult(found || null)
+    setSearching(true)
+    setResult(await findApplication(id))
+    setSearching(false)
   }
 
   return (
@@ -24,7 +26,9 @@ export default function Track() {
             value={id}
             onChange={(e) => setId(e.target.value)}
           />
-          <button className="bg-forest text-white px-5 font-semibold">Track</button>
+          <button className="bg-forest text-white px-5 font-semibold" disabled={searching}>
+            {searching ? 'Searching…' : 'Track'}
+          </button>
         </form>
         <div className="mx-auto max-w-xl px-4 mt-8">
           {result === null ? <p className="text-muted">No application found for that ID.</p> : null}

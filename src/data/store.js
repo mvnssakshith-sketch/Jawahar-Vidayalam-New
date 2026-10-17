@@ -1,4 +1,44 @@
-const KEY = 'jv_school_db_v3'
+export const COLLECTIONS = [
+  'teachers',
+  'parents',
+  'students',
+  'classes',
+  'subjects',
+  'attendance',
+  'exams',
+  'marks',
+  'fees',
+  'payments',
+  'notices',
+  'events',
+  'homework',
+  'assignments',
+  'studyMaterials',
+  'gallery',
+  'busRoutes',
+  'leaveRequests',
+  'admissions',
+  'enquiries',
+  'contacts',
+  'timetable',
+  'messages',
+  'eventRegistrations',
+]
+
+export const PUBLIC_COLLECTIONS = ['notices', 'events', 'gallery', 'busRoutes']
+
+export const DEFAULT_SETTINGS = {
+  schoolName: 'Jawahar Vidyalayam',
+  academicYear: '2026–27',
+  admissionsOpen: true,
+}
+
+export function emptyDb() {
+  return {
+    ...Object.fromEntries(COLLECTIONS.map((c) => [c, []])),
+    settings: { ...DEFAULT_SETTINGS },
+  }
+}
 
 function uid(prefix = 'id') {
   return `${prefix}-${Math.random().toString(36).slice(2, 8)}${Date.now().toString(36).slice(-4)}`
@@ -17,7 +57,7 @@ export const DEMO_ACCOUNTS = [
   { email: 'student@jawaharvidyalam.edu', password: 'student123', role: 'student', label: 'Student' },
 ]
 
-function buildSeed() {
+export function buildSeed() {
   const teachers = [
     { id: 't1', name: 'Anjali Menon', email: 'teacher@jawaharvidyalam.edu', phone: '9876500001', subject: 'English', classes: ['8-A'], qualification: 'M.A., B.Ed.', experience: '14 years' },
     { id: 't2', name: 'Rajesh Kumar', email: 'rajesh.kumar@jawaharvidyalam.edu', phone: '9876500002', subject: 'Mathematics', classes: ['10-A', '12-A'], qualification: 'M.Sc., B.Ed.', experience: '18 years' },
@@ -188,7 +228,7 @@ function buildSeed() {
     { className: '8-A', day: 'Thursday', periods: ['Social Science', 'English', 'Mathematics', 'Break', 'Science', 'Computer', 'Life Skills'] },
     { className: '8-A', day: 'Friday', periods: ['English', 'Science', 'Mathematics', 'Break', 'Social Science', 'Music', 'Club'] },
     { className: '8-A', day: 'Saturday', periods: ['House activity', 'Mathematics support', 'Assembly', 'Break', 'Games', '—', '—'] },
-  ]
+  ].map((t) => ({ id: `tt-${t.className}-${t.day}`, ...t }))
 
   const messages = [
     { id: 'msg1', fromRole: 'parent', fromId: 'p1', toRole: 'teacher', toId: 't1', subject: 'Clarification on English homework', body: 'Could you confirm the word limit for the letter?', date: daysAgo(1), studentId: 's1' },
@@ -228,33 +268,18 @@ function buildSeed() {
     timetable,
     messages,
     eventRegistrations: [],
-    settings: {
-      schoolName: 'Jawahar Vidyalayam',
-      academicYear: '2026–27',
-      admissionsOpen: true,
-    },
+    settings: { ...DEFAULT_SETTINGS },
   }
 }
 
-export function loadDb() {
-  try {
-    const raw = localStorage.getItem(KEY)
-    if (raw) return JSON.parse(raw)
-  } catch {
-    /* ignore */
-  }
+// Seed data without login accounts; `_order` preserves list order in Firestore.
+export function seedCollections() {
   const seed = buildSeed()
-  saveDb(seed)
+  delete seed.users
+  for (const name of COLLECTIONS) {
+    seed[name] = (seed[name] || []).map((row, i) => ({ ...row, _order: i }))
+  }
   return seed
-}
-
-export function saveDb(db) {
-  localStorage.setItem(KEY, JSON.stringify(db))
-}
-
-export function resetDb() {
-  localStorage.removeItem(KEY)
-  return loadDb()
 }
 
 export { uid }

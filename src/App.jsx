@@ -81,8 +81,8 @@ function ScrollToTop() {
 export default function App() {
   return (
     <BrowserRouter>
-      <SchoolProvider>
-        <AuthProvider>
+      <AuthProvider>
+        <SchoolProvider>
           <ScrollToTop />
           <Routes>
             <Route element={<PublicLayout />}>
@@ -179,8 +179,8 @@ export default function App() {
             <Route path="/portal" element={<Navigate to="/login" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
-        </AuthProvider>
-      </SchoolProvider>
+        </SchoolProvider>
+      </AuthProvider>
     </BrowserRouter>
   )
 }

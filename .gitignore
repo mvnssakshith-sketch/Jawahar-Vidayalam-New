@@ -9,6 +9,10 @@ lerna-debug.log*
 
 node_modules
 dist
+
+# Firebase service-account keys (never commit)
+*-firebase-adminsdk-*.json
+serviceAccount*.json
 dist-ssr
 *.local
 

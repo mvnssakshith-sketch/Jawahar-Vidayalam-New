@@ -10,11 +10,17 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault()
-    const res = login(email, password)
-    if (!res.ok) setError(res.error)
+    setBusy(true)
+    setError('')
+    const res = await login(email, password)
+    if (!res.ok) {
+      setError(res.error)
+      setBusy(false)
+    }
   }
 
   return (
@@ -45,7 +51,9 @@ export default function Login() {
             <input className="w-full border border-cream-dark px-3 py-2.5" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
             <input className="w-full border border-cream-dark px-3 py-2.5" type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
             {error ? <p className="text-sm text-red-700">{error}</p> : null}
-            <button className="w-full bg-forest text-white py-2.5 font-semibold">Sign in</button>
+            <button className="w-full bg-forest text-white py-2.5 font-semibold disabled:opacity-60" disabled={busy}>
+              {busy ? 'Signing in…' : 'Sign in'}
+            </button>
           </form>
           <div className="mt-8">
             <p className="text-xs uppercase tracking-widest text-muted">Demo accounts — click to fill</p>
