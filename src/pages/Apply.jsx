@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { GoldButton, PageHero } from '../components/ui/Blocks'
 import { useSchool } from '../context/SchoolContext'
+import { uid } from '../data/store'
 
 const classes = ['Nursery', 'LKG', 'UKG', 'Class I', 'Class II', 'Class III', 'Class IV', 'Class V', 'Class VI', 'Class VII', 'Class VIII', 'Class IX', 'Class X']
 
