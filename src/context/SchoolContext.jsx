@@ -137,10 +137,25 @@ export function SchoolProvider({ children }) {
     return () => unsubs.forEach((u) => u())
   }, [userId])
 
+  const pendingWrites = useRef(0)
+
+  useEffect(() => {
+    const warn = (e) => {
+      if (pendingWrites.current > 0) e.preventDefault()
+    }
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [])
+
   const persist = useCallback((ops) => {
     if (!ops.length) return Promise.resolve()
     setSyncError('')
-    return commit(ops).catch((err) => {
+    pendingWrites.current += 1
+    const done = () => {
+      pendingWrites.current -= 1
+    }
+    return commit(ops).then(done, (err) => {
+      done()
       console.error('Firestore write failed', err)
       setSyncError(
         err?.code === 'permission-denied'

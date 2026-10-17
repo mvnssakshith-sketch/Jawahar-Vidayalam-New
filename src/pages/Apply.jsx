@@ -125,7 +125,7 @@ export default function Apply() {
           </label>
           <div className="sm:col-span-2">
             <GoldButton type="submit" disabled={saving}>{saving ? 'Submitting…' : 'Submit application'}</GoldButton>
-            <p className="text-xs text-muted mt-3">A copy is stored for the admissions office. Application ID format: JV-2026-XXXX. Ref {uid('ref')}</p>
+            <p className="text-xs text-muted mt-3">A copy is stored for the admissions office. You will receive an Application ID (format JV-{new Date().getFullYear()}-XXXXXX) to track your application.</p>
           </div>
         </form>
       </section>
