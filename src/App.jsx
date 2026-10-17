@@ -25,6 +25,7 @@ import {
   AdminClasses,
   AdminDashboard,
   AdminDocuments,
+  AdminEnquiries,
   AdminEvents,
   AdminExams,
   AdminFees,
@@ -32,6 +33,7 @@ import {
   AdminHomework,
   AdminNotices,
   AdminParents,
+  AdminRegistrations,
   AdminReports,
   AdminResults,
   AdminSettings,
@@ -42,6 +44,7 @@ import {
 } from './pages/portal/AdminPages'
 import PortalLayout from './pages/portal/PortalLayout'
 import RequireAuth from './pages/portal/RequireAuth'
+import WebsiteContent from './pages/portal/WebsiteContent'
 import {
   ChildProfile,
   FamilyAttendance,
@@ -64,6 +67,7 @@ import {
   TeacherLeave,
   TeacherMarks,
   TeacherMaterials,
+  TeacherMessages,
   TeacherNotices,
   TeacherProfile,
   TeacherStudents,
@@ -118,6 +122,9 @@ export default function App() {
                 <Route path="results" element={<AdminResults />} />
                 <Route path="fees" element={<AdminFees />} />
                 <Route path="admissions" element={<AdminAdmissions />} />
+                <Route path="enquiries" element={<AdminEnquiries />} />
+                <Route path="registrations" element={<AdminRegistrations />} />
+                <Route path="website" element={<WebsiteContent />} />
                 <Route path="notices" element={<AdminNotices />} />
                 <Route path="events" element={<AdminEvents />} />
                 <Route path="homework" element={<AdminHomework />} />
@@ -141,6 +148,7 @@ export default function App() {
                 <Route path="materials" element={<TeacherMaterials />} />
                 <Route path="notices" element={<TeacherNotices />} />
                 <Route path="students" element={<TeacherStudents />} />
+                <Route path="messages" element={<TeacherMessages />} />
                 <Route path="leave" element={<TeacherLeave />} />
                 <Route path="timetable" element={<TeacherTimetable />} />
               </Route>

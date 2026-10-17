@@ -1,9 +1,9 @@
 import { PageHero } from '../components/ui/Blocks'
 import { useSchool } from '../context/SchoolContext'
-import { images } from '../data/school'
 
 export default function Notices() {
   const { db } = useSchool()
+  const { images } = db.site
   const publicNotices = db.notices.filter((n) => n.audience === 'Public' || n.audience === 'All')
 
   return (

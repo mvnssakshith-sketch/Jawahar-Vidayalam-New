@@ -1,9 +1,9 @@
 import { PageHero, SectionTitle } from '../components/ui/Blocks'
 import { useSchool } from '../context/SchoolContext'
-import { images } from '../data/school'
 
 export default function Transport() {
   const { db } = useSchool()
+  const { images } = db.site
   return (
     <div>
       <PageHero

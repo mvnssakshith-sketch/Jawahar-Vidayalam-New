@@ -1,7 +1,7 @@
 import { Download } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { GoldButton, PageHero, SectionEyebrow, SectionTitle } from '../components/ui/Blocks'
-import { images } from '../data/school'
+import { useSite } from '../context/SchoolContext'
 import {
   scertUrl,
   stateBoardUrl,
@@ -33,6 +33,7 @@ function downloadClassSyllabus(row) {
 }
 
 export default function Syllabus() {
+  const { images } = useSite()
   const [group, setGroup] = useState('all')
   const [openId, setOpenId] = useState('10')
 

@@ -1,7 +1,8 @@
 import { ChevronDown, Mail, Menu, Phone, X } from 'lucide-react'
 import { useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
-import { nav, school } from '../data/school'
+import { useSite } from '../context/SchoolContext'
+import { nav } from '../data/school'
 import Logo from './Logo'
 
 function Item({ item, onNavigate }) {
@@ -50,6 +51,7 @@ function Item({ item, onNavigate }) {
 }
 
 export default function Header() {
+  const { school } = useSite()
   const [mobile, setMobile] = useState(false)
   return (
     <header className="sticky top-0 z-40">

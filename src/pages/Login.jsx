@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import Logo from '../components/Logo'
 import { useAuth } from '../context/AuthContext'
-import { school } from '../data/school'
+import { useSite } from '../context/SchoolContext'
 import { DEMO_ACCOUNTS } from '../data/store'
 
 export default function Login() {
   const { login } = useAuth()
+  const { school, images } = useSite()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -27,7 +28,7 @@ export default function Login() {
     <div className="min-h-svh grid lg:grid-cols-2">
       <div
         className="hidden lg:flex flex-col justify-end p-12 text-white relative"
-        style={{ backgroundImage: 'url(/images/campus.jpg)', backgroundSize: 'cover' }}
+        style={{ backgroundImage: `url(${images.campus})`, backgroundSize: 'cover' }}
       >
         <div className="absolute inset-0 hero-overlay" />
         <div className="relative">

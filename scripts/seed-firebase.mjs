@@ -7,6 +7,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { cert, initializeApp } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 import { getFirestore } from 'firebase-admin/firestore'
+import { DEFAULT_SITE } from '../src/data/site.js'
 import { COLLECTIONS, buildSeed, seedCollections } from '../src/data/store.js'
 
 const force = process.argv.includes('--force')
@@ -64,8 +65,20 @@ async function seedData() {
   await writer.close()
 }
 
+async function seedSite() {
+  const ref = db.doc('meta/site')
+  if (!force && (await ref.get()).exists) {
+    console.log('  website content already present; skipping (use --force to overwrite)')
+    return
+  }
+  await ref.set(DEFAULT_SITE)
+  console.log('  website content uploaded')
+}
+
 console.log('Loading school data…')
 await seedData()
+console.log('Loading website content…')
+await seedSite()
 console.log('Creating portal logins…')
 try {
   await seedUsers()

@@ -1,11 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { collection, doc, getDoc, onSnapshot, writeBatch } from 'firebase/firestore'
 import { firestore } from '../firebase'
+import { withSiteDefaults } from '../data/site'
 import { COLLECTIONS, DEFAULT_SETTINGS, PUBLIC_COLLECTIONS, emptyDb, seedCollections } from '../data/store'
 import { useAuth } from './AuthContext'
 
 const SchoolContext = createContext(null)
 const SETTINGS_REF = () => doc(firestore, 'meta', 'settings')
+const SITE_REF = () => doc(firestore, 'meta', 'site')
 const BATCH_LIMIT = 450
 
 function byOrder(a, b) {
@@ -53,6 +55,9 @@ function diffDb(prev, next) {
   if (!deepEqual(prev.settings, next.settings)) {
     ops.push({ type: 'set', ref: SETTINGS_REF(), data: next.settings })
   }
+  if (next.site && !deepEqual(prev.site, next.site)) {
+    ops.push({ type: 'set', ref: SITE_REF(), data: next.site })
+  }
   return ops
 }
 
@@ -81,12 +86,12 @@ export function SchoolProvider({ children }) {
 
   useEffect(() => {
     const names = userId ? COLLECTIONS : PUBLIC_COLLECTIONS
-    const pending = new Set([...names, 'settings'])
+    const pending = new Set([...names, 'settings', 'site'])
     const loaded = (name) => {
       pending.delete(name)
       if (pending.size === 0) setReady(true)
     }
-    const fresh = emptyDb()
+    const fresh = { ...emptyDb(), settings: dbRef.current.settings, site: dbRef.current.site }
     dbRef.current = fresh
     setDb(fresh)
     setReady(false)
@@ -117,6 +122,17 @@ export function SchoolProvider({ children }) {
           loaded('settings')
         },
       ),
+      onSnapshot(
+        SITE_REF(),
+        (snap) => {
+          setDb((prev) => ({ ...prev, site: withSiteDefaults(snap.data()) }))
+          loaded('site')
+        },
+        (err) => {
+          console.error('Firestore: could not load website content', err)
+          loaded('site')
+        },
+      ),
     )
     return () => unsubs.forEach((u) => u())
   }, [userId])
@@ -142,8 +158,10 @@ export function SchoolProvider({ children }) {
       const ops = diffDb(prev, next)
       dbRef.current = next
       setDb(next)
-      persist(ops).catch(() => {})
-      return next
+      return persist(ops).then(
+        () => true,
+        () => false,
+      )
     },
     [persist],
   )
@@ -191,4 +209,8 @@ export function useSchool() {
   const ctx = useContext(SchoolContext)
   if (!ctx) throw new Error('useSchool must be used inside SchoolProvider')
   return ctx
+}
+
+export function useSite() {
+  return useSchool().db.site
 }

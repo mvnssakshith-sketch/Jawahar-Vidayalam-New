@@ -1,14 +1,9 @@
 import { PageHero, SectionEyebrow, SectionTitle } from '../components/ui/Blocks'
-import {
-  accreditations,
-  achievements,
-  coreValues,
-  facultyHighlights,
-  images,
-  school,
-} from '../data/school'
+import { useSite } from '../context/SchoolContext'
 
 export default function About() {
+  const { accreditations, achievements, coreValues, facultyHighlights, images, school } = useSite()
+  const about = school.about
   return (
     <div>
       <PageHero
@@ -22,13 +17,9 @@ export default function About() {
         <div className="mx-auto max-w-6xl px-4 grid lg:grid-cols-2 gap-12 items-start">
           <div>
             <SectionEyebrow>Our story</SectionEyebrow>
-            <SectionTitle>A school named for a larger idea of India</SectionTitle>
-            <p className="mt-5 text-muted leading-relaxed">
-              Jawahar Vidyalayam opened its gates in {school.established} at Aswaraopet with a handful of classrooms and the motto {school.motto} — Knowledge, Humility, Wisdom. We believe children deserve both high standards and a kind adult in the room.
-            </p>
-            <p className="mt-4 text-muted leading-relaxed">
-              Over the years we have grown into a full school community without losing the feeling of a place where teachers still walk the corridors after the last bell. Our alumni sit in universities, studios, laboratories, and public service. We measure ourselves by the adults they become.
-            </p>
+            <SectionTitle>{about.storyTitle}</SectionTitle>
+            <p className="mt-5 text-muted leading-relaxed">{about.story}</p>
+            {about.story2 ? <p className="mt-4 text-muted leading-relaxed">{about.story2}</p> : null}
           </div>
 
           <div className="space-y-6 lg:justify-self-end w-full max-w-md">
@@ -55,17 +46,13 @@ export default function About() {
         <div className="mx-auto max-w-6xl px-4 grid md:grid-cols-2 gap-8">
           <article className="bg-white p-8 border border-cream-dark">
             <SectionEyebrow>Vision</SectionEyebrow>
-            <h3 className="font-display text-3xl text-forest mt-2">To raise thoughtful citizens</h3>
-            <p className="mt-4 text-muted leading-relaxed">
-              We envision a school where every child is known, challenged, and trusted — prepared for board examinations and for a life of contribution.
-            </p>
+            <h3 className="font-display text-3xl text-forest mt-2">{about.visionTitle}</h3>
+            <p className="mt-4 text-muted leading-relaxed">{about.vision}</p>
           </article>
           <article className="bg-white p-8 border border-cream-dark">
             <SectionEyebrow>Mission</SectionEyebrow>
-            <h3 className="font-display text-3xl text-forest mt-2">Excellence with empathy</h3>
-            <p className="mt-4 text-muted leading-relaxed">
-              Deliver Telangana State Board academics of the highest quality, cultivate character through daily practice, and partner with families in the education of the whole child.
-            </p>
+            <h3 className="font-display text-3xl text-forest mt-2">{about.missionTitle}</h3>
+            <p className="mt-4 text-muted leading-relaxed">{about.mission}</p>
           </article>
         </div>
       </section>
@@ -91,7 +78,7 @@ export default function About() {
             <div className="mx-auto w-full max-w-sm aspect-[3/4] overflow-hidden rounded-sm bg-white">
               <img
                 src={images.principal}
-                alt="Principal Inuganti Mythali"
+                alt={`${school.principal.title} ${school.principal.name}`}
                 className="h-full w-full object-cover object-[center_12%]"
               />
             </div>
@@ -104,11 +91,11 @@ export default function About() {
             <div className="mx-auto w-full max-w-sm aspect-[3/4] overflow-hidden rounded-sm bg-white">
               <img
                 src={images.chairman}
-                alt="Managing Director Inuganti Praveen Kumar"
+                alt={`${school.chairman.title} ${school.chairman.name}`}
                 className="h-full w-full object-cover object-[center_18%]"
               />
             </div>
-            <p className="text-xs tracking-[0.2em] uppercase text-gold-light mt-4">Managing Director’s message</p>
+            <p className="text-xs tracking-[0.2em] uppercase text-gold-light mt-4">{school.chairman.title}’s message</p>
             <h3 className="font-display text-3xl mt-1">{school.chairman.name}</h3>
             <p className="text-white/70 text-sm">{school.chairman.title}</p>
             <p className="mt-4 text-white/85 leading-relaxed">{school.chairman.message}</p>

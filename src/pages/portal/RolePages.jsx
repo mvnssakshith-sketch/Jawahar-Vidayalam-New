@@ -5,18 +5,40 @@ import { attendanceSummary, examTotals } from '../../lib/utils'
 import { uid } from '../../data/store'
 
 function teacherOf(user, db) {
-  return db.teachers.find((t) => t.id === user.teacherId) || db.teachers[0]
+  return db.teachers.find((t) => t.id === user.teacherId) || { id: user.teacherId, name: user.name, subject: '', classes: [] }
+}
+
+function classesOf(teacher) {
+  return teacher.classes?.length ? teacher.classes : []
+}
+
+// The class teacher for a class like "8-A", falling back to any teacher allocated to it.
+function classTeacherId(db, className) {
+  const cls = db.classes.find((c) => `${c.name}-${c.section}` === className)
+  return cls?.teacherId || db.teachers.find((t) => t.classes?.includes(className))?.id || ''
+}
+
+function ClassPicker({ classes, value, onChange }) {
+  if (!classes.length) return <p className="text-sm text-muted">No classes are allocated to you yet. Ask the office to update your teacher record.</p>
+  return (
+    <select className="border px-3 py-2" value={value} onChange={(e) => onChange(e.target.value)}>
+      {classes.map((c) => (
+        <option key={c}>{c}</option>
+      ))}
+    </select>
+  )
 }
 
 export function TeacherDashboard() {
   const { user } = useAuth()
   const { db } = useSchool()
   const teacher = teacherOf(user, db)
-  const classStudents = db.students.filter((s) => teacher.classes?.includes(s.className) || s.className === '8-A')
+  const myClasses = classesOf(teacher)
+  const classStudents = db.students.filter((s) => myClasses.includes(s.className))
   return (
     <div>
       <h1 className="font-display text-3xl text-forest">Good day, {teacher.name}</h1>
-      <p className="text-muted mt-1">{teacher.subject} · Classes { (teacher.classes || ['8-A']).join(', ') }</p>
+      <p className="text-muted mt-1">{teacher.subject} · Classes {myClasses.join(', ') || 'not allocated yet'}</p>
       <div className="grid sm:grid-cols-3 gap-4 mt-8">
         <div className="bg-white p-5 border"><p className="text-xs uppercase text-muted">Students</p><p className="font-display text-4xl text-forest">{classStudents.length}</p></div>
         <div className="bg-white p-5 border"><p className="text-xs uppercase text-muted">Homework</p><p className="font-display text-4xl text-forest">{db.homework.filter((h) => h.teacherId === teacher.id).length}</p></div>
@@ -48,7 +70,8 @@ export function TeacherAttendance() {
   const { user } = useAuth()
   const { db, update } = useSchool()
   const teacher = teacherOf(user, db)
-  const className = (teacher.classes && teacher.classes[0]) || '8-A'
+  const myClasses = classesOf(teacher)
+  const [className, setClassName] = useState(myClasses[0] || '')
   const students = db.students.filter((s) => s.className === className)
   const today = new Date().toISOString().slice(0, 10)
   const [date, setDate] = useState(today)
@@ -65,10 +88,13 @@ export function TeacherAttendance() {
   return (
     <div>
       <h1 className="font-display text-3xl text-forest">Mark attendance · {className}</h1>
-      <label className="block mt-4 text-sm">
-        Date
-        <input type="date" className="ml-2 border px-2 py-1" value={date} onChange={(e) => setDate(e.target.value)} />
-      </label>
+      <div className="mt-4 flex flex-wrap items-center gap-4 text-sm">
+        <ClassPicker classes={myClasses} value={className} onChange={setClassName} />
+        <label>
+          Date
+          <input type="date" className="ml-2 border px-2 py-1" value={date} onChange={(e) => setDate(e.target.value)} />
+        </label>
+      </div>
       <div className="mt-6 bg-white border">
         {students.map((s) => {
           const rec = db.attendance.find((a) => a.studentId === s.id && a.date === date)
@@ -130,33 +156,16 @@ export function TeacherHomework() {
   const { user } = useAuth()
   const { db, update } = useSchool()
   const teacher = teacherOf(user, db)
-  const [form, setForm] = useState({ className: '8-A', subject: teacher.subject, title: '', dueDate: '', description: '' })
   return (
-    <div>
-      <h1 className="font-display text-3xl text-forest">Homework</h1>
-      <form
-        className="mt-4 bg-white p-5 border grid gap-3 max-w-xl"
-        onSubmit={(e) => {
-          e.preventDefault()
-          update((d) => {
-            d.homework.unshift({ id: uid('hw'), ...form, teacherId: teacher.id })
-            return d
-          })
-          setForm({ ...form, title: '', description: '' })
-        }}
-      >
-        <input className="border px-3 py-2" placeholder="Class" value={form.className} onChange={(e) => setForm({ ...form, className: e.target.value })} />
-        <input className="border px-3 py-2" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
-        <input type="date" className="border px-3 py-2" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} required />
-        <textarea className="border px-3 py-2" placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-        <button className="bg-forest text-white py-2">Upload homework</button>
-      </form>
-      <ul className="mt-6 space-y-2">
-        {db.homework.filter((h) => h.teacherId === teacher.id || h.className === '8-A').map((h) => (
-          <li key={h.id} className="bg-white p-4 border">{h.className} · {h.title} · due {h.dueDate}</li>
-        ))}
-      </ul>
-    </div>
+    <ClassWorkPage
+      title="Homework"
+      collection="homework"
+      idPrefix="hw"
+      teacher={teacher}
+      items={db.homework}
+      update={update}
+      submitLabel="Post homework"
+    />
   )
 }
 
@@ -165,30 +174,69 @@ export function TeacherAssignments() {
   const { db, update } = useSchool()
   const teacher = teacherOf(user, db)
   return (
+    <ClassWorkPage
+      title="Assignments"
+      collection="assignments"
+      idPrefix="as"
+      teacher={teacher}
+      items={db.assignments}
+      update={update}
+      submitLabel="Post assignment"
+    />
+  )
+}
+
+// Homework and assignments share the same form: class, subject, title, due date, description.
+function ClassWorkPage({ title, collection, idPrefix, teacher, items, update, submitLabel }) {
+  const myClasses = classesOf(teacher)
+  const empty = { className: myClasses[0] || '', subject: teacher.subject || '', title: '', dueDate: '', description: '' }
+  const [form, setForm] = useState(empty)
+  const mine = items.filter((h) => h.teacherId === teacher.id || myClasses.includes(h.className))
+  return (
     <div>
-      <h1 className="font-display text-3xl text-forest">Assignments</h1>
-      <button
-        className="mt-4 bg-forest text-white px-4 py-2 text-sm"
-        onClick={() =>
-          update((d) => {
-            d.assignments.unshift({
-              id: uid('as'),
-              className: '8-A',
-              subject: teacher.subject,
-              title: 'New assignment',
-              dueDate: new Date().toISOString().slice(0, 10),
-              teacherId: teacher.id,
-              description: 'Uploaded from teacher portal',
-            })
+      <h1 className="font-display text-3xl text-forest">{title}</h1>
+      <form
+        className="mt-4 bg-white p-5 border grid gap-3 max-w-xl"
+        onSubmit={async (e) => {
+          e.preventDefault()
+          const ok = await update((d) => {
+            d[collection].unshift({ id: uid(idPrefix), ...form, teacherId: teacher.id })
             return d
           })
-        }
+          if (ok) setForm({ ...form, title: '', description: '', dueDate: '' })
+        }}
       >
-        Upload assignment
-      </button>
+        <ClassPicker classes={myClasses} value={form.className} onChange={(v) => setForm({ ...form, className: v })} />
+        <input className="border px-3 py-2" placeholder="Subject" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} required />
+        <input className="border px-3 py-2" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
+        <label className="text-sm text-muted">
+          Due date
+          <input type="date" className="ml-2 border px-3 py-2" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} required />
+        </label>
+        <textarea className="border px-3 py-2" placeholder="Instructions" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+        <button className="bg-forest text-white py-2" disabled={!form.className}>{submitLabel}</button>
+      </form>
       <ul className="mt-6 space-y-2">
-        {db.assignments.map((a) => (
-          <li key={a.id} className="bg-white p-4 border">{a.title} · {a.className} · {a.dueDate}</li>
+        {mine.map((h) => (
+          <li key={h.id} className="bg-white p-4 border flex justify-between gap-4">
+            <span>
+              <span className="font-semibold text-forest">{h.className} · {h.subject}</span> — {h.title} · due {h.dueDate}
+            </span>
+            {h.teacherId === teacher.id ? (
+              <button
+                className="text-sm text-red-700"
+                onClick={() =>
+                  window.confirm('Delete this item?') &&
+                  update((d) => {
+                    d[collection] = d[collection].filter((x) => x.id !== h.id)
+                    return d
+                  })
+                }
+              >
+                Delete
+              </button>
+            ) : null}
+          </li>
         ))}
       </ul>
     </div>
@@ -199,25 +247,38 @@ export function TeacherMaterials() {
   const { user } = useAuth()
   const { db, update } = useSchool()
   const teacher = teacherOf(user, db)
+  const myClasses = classesOf(teacher)
+  const [form, setForm] = useState({ className: myClasses[0] || '', title: '', type: 'PDF', link: '' })
+  const mine = db.studyMaterials.filter((m) => m.uploadedBy === teacher.id || myClasses.includes(m.className))
   return (
     <div>
       <h1 className="font-display text-3xl text-forest">Study materials</h1>
-      <button
-        className="mt-4 bg-forest text-white px-4 py-2 text-sm"
-        onClick={() => {
-          const title = window.prompt('Material title')
-          if (!title) return
-          update((d) => {
-            d.studyMaterials.unshift({ id: uid('sm'), className: '8-A', subject: teacher.subject, title, type: 'PDF', uploadedBy: teacher.id })
+      <form
+        className="mt-4 bg-white p-5 border grid gap-3 max-w-xl"
+        onSubmit={async (e) => {
+          e.preventDefault()
+          const ok = await update((d) => {
+            d.studyMaterials.unshift({ id: uid('sm'), ...form, subject: teacher.subject, uploadedBy: teacher.id })
             return d
           })
+          if (ok) setForm({ ...form, title: '', link: '' })
         }}
       >
-        Upload material
-      </button>
+        <ClassPicker classes={myClasses} value={form.className} onChange={(v) => setForm({ ...form, className: v })} />
+        <input className="border px-3 py-2" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
+        <select className="border px-3 py-2" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+          {['PDF', 'Notes', 'Worksheet', 'Video', 'Link'].map((t) => (
+            <option key={t}>{t}</option>
+          ))}
+        </select>
+        <input className="border px-3 py-2" type="url" placeholder="Link (Google Drive, YouTube…) — optional" value={form.link} onChange={(e) => setForm({ ...form, link: e.target.value })} />
+        <button className="bg-forest text-white py-2" disabled={!form.className}>Share material</button>
+      </form>
       <ul className="mt-6 space-y-2">
-        {db.studyMaterials.map((m) => (
-          <li key={m.id} className="bg-white p-4 border">{m.title} · {m.className} · {m.type}</li>
+        {mine.map((m) => (
+          <li key={m.id} className="bg-white p-4 border">
+            {m.link ? <a href={m.link} target="_blank" rel="noreferrer" className="text-forest font-semibold underline">{m.title}</a> : m.title} · {m.className} · {m.type}
+          </li>
         ))}
       </ul>
     </div>
@@ -262,10 +323,13 @@ export function TeacherNotices() {
 }
 
 export function TeacherStudents() {
+  const { user } = useAuth()
   const { db } = useSchool()
+  const myClasses = classesOf(teacherOf(user, db))
+  const students = db.students.filter((s) => myClasses.includes(s.className))
   return (
     <div>
-      <h1 className="font-display text-3xl text-forest mb-4">Student information</h1>
+      <h1 className="font-display text-3xl text-forest mb-4">Student information · {myClasses.join(', ') || 'no classes allocated'}</h1>
       <div className="overflow-x-auto bg-white border">
         <table className="w-full text-sm">
           <thead className="bg-forest text-white">
@@ -277,7 +341,7 @@ export function TeacherStudents() {
             </tr>
           </thead>
           <tbody>
-            {db.students.map((s) => {
+            {students.map((s) => {
               const p = db.parents.find((x) => x.id === s.parentId)
               return (
                 <tr key={s.id} className="border-t">
@@ -291,6 +355,68 @@ export function TeacherStudents() {
           </tbody>
         </table>
       </div>
+    </div>
+  )
+}
+
+export function TeacherMessages() {
+  const { user } = useAuth()
+  const { db, update } = useSchool()
+  const teacher = teacherOf(user, db)
+  const mine = db.messages.filter((m) => m.toId === teacher.id || m.fromId === teacher.id)
+  const studentIds = [...new Set(mine.map((m) => m.studentId))]
+  return (
+    <div>
+      <h1 className="font-display text-3xl text-forest">Parent messages</h1>
+      {studentIds.length === 0 ? <p className="mt-4 text-muted">No messages yet.</p> : null}
+      {studentIds.map((sid) => {
+        const student = db.students.find((s) => s.id === sid)
+        const parent = db.parents.find((p) => p.id === student?.parentId)
+        const thread = mine.filter((m) => m.studentId === sid)
+        return (
+          <section key={sid} className="mt-6 bg-white border p-4">
+            <h2 className="font-semibold text-forest">
+              {student?.name || 'Student'} · {student?.className} {parent ? `· ${parent.name}` : ''}
+            </h2>
+            <div className="mt-3 space-y-2">
+              {thread.map((m) => (
+                <article key={m.id} className={`p-3 text-sm ${m.fromRole === 'teacher' ? 'bg-cream ml-8' : 'border mr-8'}`}>
+                  <p className="text-xs text-muted">{m.date} · {m.fromRole === 'teacher' ? 'You' : 'Parent'}</p>
+                  <p className="font-semibold">{m.subject}</p>
+                  <p className="mt-1">{m.body}</p>
+                </article>
+              ))}
+            </div>
+            <form
+              className="mt-3 flex gap-2"
+              onSubmit={async (e) => {
+                e.preventDefault()
+                const form = e.currentTarget
+                const body = new FormData(form).get('body')
+                const last = thread[thread.length - 1]
+                const ok = await update((d) => {
+                  d.messages.push({
+                    id: uid('msg'),
+                    fromRole: 'teacher',
+                    fromId: teacher.id,
+                    toRole: 'parent',
+                    toId: parent?.id || '',
+                    subject: last?.subject?.startsWith('Re:') ? last.subject : `Re: ${last?.subject || 'Message'}`,
+                    body,
+                    date: new Date().toISOString().slice(0, 10),
+                    studentId: sid,
+                  })
+                  return d
+                })
+                if (ok) form.reset()
+              }}
+            >
+              <input name="body" required className="flex-1 border px-3 py-2 text-sm" placeholder="Write a reply…" />
+              <button className="bg-forest text-white px-4 text-sm">Reply</button>
+            </form>
+          </section>
+        )
+      })}
     </div>
   )
 }
@@ -333,11 +459,27 @@ export function TeacherLeave() {
 }
 
 export function TeacherTimetable() {
+  const { user } = useAuth()
   const { db } = useSchool()
-  const rows = db.timetable.filter((t) => t.className === '8-A')
+  const myClasses = classesOf(teacherOf(user, db))
+  const [className, setClassName] = useState(myClasses[0] || '')
   return (
     <div>
-      <h1 className="font-display text-3xl text-forest mb-4">Timetable · 8-A</h1>
+      <div className="mb-4">
+        <ClassPicker classes={myClasses} value={className} onChange={setClassName} />
+      </div>
+      <TimetableView className={className} />
+    </div>
+  )
+}
+
+function TimetableView({ className }) {
+  const { db } = useSchool()
+  const rows = db.timetable.filter((t) => t.className === className)
+  if (!rows.length) return <p className="text-muted">No timetable has been published for {className || 'this class'} yet.</p>
+  return (
+    <div>
+      <h1 className="font-display text-3xl text-forest mb-4">Timetable · {className}</h1>
       <div className="overflow-x-auto bg-white border">
         <table className="w-full text-sm">
           <thead className="bg-forest text-white">
@@ -368,13 +510,14 @@ export function useChildContext() {
   const { user } = useAuth()
   const { db } = useSchool()
   return useMemo(() => {
+    const noStudent = { id: '', name: 'your child', className: '' }
     if (user.role === 'student') {
-      const student = db.students.find((s) => s.id === user.studentId) || db.students[0]
-      const parent = db.parents.find((p) => p.id === student.parentId)
+      const student = db.students.find((s) => s.id === user.studentId) || { ...noStudent, name: user.name }
+      const parent = db.parents.find((p) => p.id === student.parentId) || { id: '', name: '' }
       return { student, parent }
     }
-    const parent = db.parents.find((p) => p.id === user.parentId) || db.parents[0]
-    const student = db.students.find((s) => s.id === parent.children?.[0]) || db.students[0]
+    const parent = db.parents.find((p) => p.id === user.parentId) || { id: user.parentId, name: user.name, children: [] }
+    const student = db.students.find((s) => s.id === parent.children?.[0]) || db.students.find((s) => s.parentId === parent.id) || noStudent
     return { student, parent }
   }, [db, user])
 }
@@ -481,7 +624,7 @@ export function FamilyFees() {
 
   function pay(fee) {
     if (!window.confirm(`Pay ${fee.head} of ₹${fee.amount} via demo gateway?`)) return
-    const receiptNo = `JV-RCPT-${Math.floor(10000 + Math.random() * 90000)}`
+    const receiptNo = `JV-RCPT-${Date.now().toString().slice(-6)}`
     update((d) => {
       const row = d.fees.find((x) => x.id === fee.id)
       if (row) row.status = 'Paid'
@@ -597,7 +740,7 @@ export function ParentMessages() {
               fromRole: 'parent',
               fromId: parent.id,
               toRole: 'teacher',
-              toId: 't1',
+              toId: classTeacherId(d, student.className),
               subject: data.get('subject'),
               body: data.get('body'),
               date: new Date().toISOString().slice(0, 10),
@@ -675,7 +818,8 @@ export function StudentDashboard() {
 }
 
 export function StudentTimetable() {
-  return <TeacherTimetable />
+  const { student } = useChildContext()
+  return <TimetableView className={student.className} />
 }
 
 export function StudentAssignments() {
@@ -724,13 +868,13 @@ export function StudentMaterials() {
             <h2 className="font-semibold">{m.title}</h2>
             <p className="text-sm text-muted">{m.subject} · {m.type}</p>
           </div>
-          <a
-            className="text-forest text-sm font-semibold"
-            href={'data:text/plain;charset=utf-8,' + encodeURIComponent(m.title + '\nJawahar Vidyalayam study material')}
-            download={`${m.title}.txt`}
-          >
-            Download
-          </a>
+          {m.link ? (
+            <a className="text-forest text-sm font-semibold" href={m.link} target="_blank" rel="noreferrer">
+              Open
+            </a>
+          ) : (
+            <span className="text-xs text-muted">Available from the class teacher</span>
+          )}
         </article>
       ))}
     </div>

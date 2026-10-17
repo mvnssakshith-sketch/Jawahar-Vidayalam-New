@@ -56,6 +56,27 @@ export const school = {
     youtube: 'https://youtube.com',
     twitter: 'https://x.com',
   },
+  home: {
+    heroText: 'State Board education for Nursery – Class X — nurturing knowledge, humility, and wisdom since 1986.',
+    aboutTitle: 'A community of learning since 1986',
+    about:
+      'Jawahar Vidyalayam, Aswaraopet, was founded in 1986 on the ideals of Knowledge · Humility · Wisdom. We give children a complete education — strong academics, cultural depth, physical fitness, and the habit of doing the right thing when nobody is watching.',
+    about2:
+      'Our campus is designed for curiosity: laboratories, a living library, sports fields, studios, and quiet classrooms. Parents are partners, not visitors.',
+  },
+  about: {
+    storyTitle: 'A school named for a larger idea of India',
+    story:
+      'Jawahar Vidyalayam opened its gates in 1986 at Aswaraopet with a handful of classrooms and the motto Vidya · Vinayam · Vivekam — Knowledge, Humility, Wisdom. We believe children deserve both high standards and a kind adult in the room.',
+    story2:
+      'Over the years we have grown into a full school community without losing the feeling of a place where teachers still walk the corridors after the last bell. Our alumni sit in universities, studios, laboratories, and public service. We measure ourselves by the adults they become.',
+    visionTitle: 'To raise thoughtful citizens',
+    vision:
+      'We envision a school where every child is known, challenged, and trusted — prepared for board examinations and for a life of contribution.',
+    missionTitle: 'Excellence with empathy',
+    mission:
+      'Deliver Telangana State Board academics of the highest quality, cultivate character through daily practice, and partner with families in the education of the whole child.',
+  },
   stats: [
     { value: '40+', label: 'Years of Excellence' },
     { value: '1,800+', label: 'Students' },

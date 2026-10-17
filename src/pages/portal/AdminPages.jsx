@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useSchool } from '../../context/SchoolContext'
+import { uid } from '../../data/store'
 import { attendanceSummary, examTotals, inr } from '../../lib/utils'
 import ResourceManager from './ResourceManager'
 
@@ -344,26 +346,65 @@ export function AdminFees() {
           </tbody>
         </table>
       </div>
-      <button
-        className="mt-4 text-sm text-forest font-semibold"
-        onClick={() =>
-          update((d) => {
-            d.payments.push({
-              id: `pay-${Date.now()}`,
-              studentId: 's1',
-              amount: 0,
-              date: new Date().toISOString().slice(0, 10),
-              method: 'Office',
-              receiptNo: `JV-RCPT-${Math.floor(10000 + Math.random() * 90000)}`,
-              status: 'Success',
-            })
-            return d
-          })
-        }
-      >
-        Record office receipt
-      </button>
+      <OfficeReceipt db={db} update={update} />
     </div>
+  )
+}
+
+function OfficeReceipt({ db, update }) {
+  const pending = db.fees.filter((f) => f.status === 'Pending')
+  const [feeId, setFeeId] = useState('')
+  const [method, setMethod] = useState('Cash')
+  const studentName = (id) => db.students.find((s) => s.id === id)?.name || id
+
+  async function record(e) {
+    e.preventDefault()
+    const fee = pending.find((f) => f.id === feeId)
+    if (!fee) return
+    const ok = await update((d) => {
+      const row = d.fees.find((f) => f.id === fee.id)
+      if (row) row.status = 'Paid'
+      d.payments.unshift({
+        id: uid('pay'),
+        studentId: fee.studentId,
+        feeId: fee.id,
+        amount: Number(fee.amount),
+        date: new Date().toISOString().slice(0, 10),
+        method,
+        receiptNo: `JV-RCPT-${Date.now().toString().slice(-6)}`,
+        status: 'Success',
+      })
+      return d
+    })
+    if (ok) setFeeId('')
+  }
+
+  return (
+    <form onSubmit={record} className="mt-6 bg-white border border-cream-dark p-5 flex flex-wrap items-end gap-3">
+      <p className="w-full font-semibold text-forest">Record a payment made at the office</p>
+      <label className="text-sm flex-1 min-w-64">
+        Pending fee
+        <select required className="mt-1 w-full border px-3 py-2" value={feeId} onChange={(e) => setFeeId(e.target.value)}>
+          <option value="">Select student & fee…</option>
+          {pending.map((f) => (
+            <option key={f.id} value={f.id}>
+              {studentName(f.studentId)} — {f.head} — {inr(f.amount)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="text-sm">
+        Method
+        <select className="mt-1 block border px-3 py-2" value={method} onChange={(e) => setMethod(e.target.value)}>
+          {['Cash', 'Cheque', 'UPI', 'Card', 'Bank transfer'].map((m) => (
+            <option key={m}>{m}</option>
+          ))}
+        </select>
+      </label>
+      <button className="bg-forest text-white px-4 py-2 text-sm font-semibold" disabled={!feeId}>
+        Mark paid & issue receipt
+      </button>
+    </form>
   )
 }
 
@@ -600,35 +641,85 @@ export function AdminReports() {
   )
 }
 
+export function AdminEnquiries() {
+  return (
+    <ResourceManager
+      title="Enquiries"
+      collection="enquiries"
+      idPrefix="eq"
+      allowCreate={false}
+      columns={[
+        { key: 'date', label: 'Date' },
+        { key: 'type', label: 'Type' },
+        { key: 'name', label: 'Name' },
+        { key: 'phone', label: 'Phone' },
+        { key: 'email', label: 'Email' },
+        { key: 'message', label: 'Message' },
+        { key: 'status', label: 'Status' },
+      ]}
+      fields={[
+        { key: 'status', label: 'Status', type: 'select', options: ['New', 'Contacted', 'Closed'] },
+        { key: 'notes', label: 'Office notes', type: 'textarea' },
+      ]}
+    />
+  )
+}
+
+export function AdminRegistrations() {
+  const { db } = useSchool()
+  const eventName = (id) => db.events.find((e) => e.id === id)?.name
+  return (
+    <ResourceManager
+      title="Event registrations"
+      collection="eventRegistrations"
+      idPrefix="reg"
+      allowCreate={false}
+      columns={[
+        { key: 'date', label: 'Registered on' },
+        { key: 'eventId', label: 'Event', render: (r) => r.eventName || eventName(r.eventId) || r.eventId },
+        { key: 'name', label: 'Name' },
+        { key: 'phone', label: 'Phone' },
+        { key: 'status', label: 'Status' },
+      ]}
+      fields={[
+        { key: 'status', label: 'Status', type: 'select', options: ['Registered', 'Confirmed', 'Cancelled'] },
+      ]}
+    />
+  )
+}
+
 export function AdminSettings() {
   const { db, update, reset } = useSchool()
-  const [form, setForm] = useStateLocal(db.settings)
+  const [form, setForm] = useState({ academicYear: db.settings.academicYear, admissionsOpen: db.settings.admissionsOpen })
+  const [saved, setSaved] = useState(false)
   return (
     <div>
-      <h1 className="font-display text-3xl text-forest">Website settings</h1>
+      <h1 className="font-display text-3xl text-forest">Settings</h1>
       <form
         className="mt-6 bg-white p-6 border max-w-lg grid gap-3"
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault()
-          update((d) => {
-            d.settings = form
-            return d
-          })
+          setSaved(
+            await update((d) => {
+              d.settings = form
+              return d
+            }),
+          )
         }}
       >
-        <label className="text-sm">
-          School name
-          <input className="mt-1 w-full border px-3 py-2" value={form.schoolName} onChange={(e) => setForm({ ...form, schoolName: e.target.value })} />
-        </label>
+        <p className="text-sm text-muted">
+          School name, contact details, photos and page text are edited under <Link to="/portal/admin/website" className="text-forest font-semibold">Website content</Link>.
+        </p>
         <label className="text-sm">
           Academic year
-          <input className="mt-1 w-full border px-3 py-2" value={form.academicYear} onChange={(e) => setForm({ ...form, academicYear: e.target.value })} />
+          <input className="mt-1 w-full border px-3 py-2" value={form.academicYear} onChange={(e) => { setForm({ ...form, academicYear: e.target.value }); setSaved(false) }} />
         </label>
         <label className="text-sm flex items-center gap-2">
-          <input type="checkbox" checked={form.admissionsOpen} onChange={(e) => setForm({ ...form, admissionsOpen: e.target.checked })} />
-          Admissions open
+          <input type="checkbox" checked={form.admissionsOpen} onChange={(e) => { setForm({ ...form, admissionsOpen: e.target.checked }); setSaved(false) }} />
+          Admissions open (online application form accepts submissions)
         </label>
         <button className="bg-forest text-white py-2 font-semibold">Save settings</button>
+        {saved ? <p className="text-sm text-forest">Saved. The website is updated.</p> : null}
       </form>
       <button
         className="mt-8 text-sm text-red-800"
@@ -640,9 +731,4 @@ export function AdminSettings() {
       </button>
     </div>
   )
-}
-
-function useStateLocal(initial) {
-  const [form, setForm] = useState(initial)
-  return [form, setForm]
 }

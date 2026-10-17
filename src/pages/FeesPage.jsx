@@ -1,7 +1,8 @@
 import { PageHero, SectionTitle } from '../components/ui/Blocks'
-import { feeStructure } from '../data/school'
+import { useSite } from '../context/SchoolContext'
 
 export default function FeesPage() {
+  const { feeStructure } = useSite()
   return (
     <div>
       <PageHero eyebrow="Admissions" title="Fee structure" subtitle="Indicative annual heads for the current planning year. Transport is optional. Official invoices are issued after enrolment." />

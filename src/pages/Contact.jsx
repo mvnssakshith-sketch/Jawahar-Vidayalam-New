@@ -1,21 +1,21 @@
 import { useState } from 'react'
 import { GoldButton, PageHero, SectionEyebrow, SectionTitle } from '../components/ui/Blocks'
 import { useSchool } from '../context/SchoolContext'
-import { images, school } from '../data/school'
+import { uid } from '../data/store'
 
 export default function Contact() {
-  const { update } = useSchool()
+  const { db, update } = useSchool()
+  const { images, school } = db.site
   const [sent, setSent] = useState(false)
   const [form, setForm] = useState({ name: '', email: '', phone: '', message: '', type: 'General' })
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault()
-    update((db) => {
-      db.contacts.push({ id: `ct-${Date.now()}`, ...form, date: new Date().toISOString() })
-      db.enquiries.push({ id: `eq-${Date.now()}`, ...form, date: new Date().toISOString().slice(0, 10) })
-      return db
+    const saved = await update((d) => {
+      d.enquiries.unshift({ id: uid('eq'), ...form, status: 'New', date: new Date().toISOString().slice(0, 10) })
+      return d
     })
-    setSent(true)
+    if (saved) setSent(true)
   }
 
   return (

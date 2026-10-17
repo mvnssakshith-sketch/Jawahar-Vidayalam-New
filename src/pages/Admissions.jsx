@@ -1,24 +1,24 @@
 import { Link } from 'react-router-dom'
 import { GoldButton, PageHero, SectionEyebrow, SectionTitle } from '../components/ui/Blocks'
-import {
-  admissionDates,
-  admissionFaqs,
-  admissionSteps,
-  eligibility,
-  images,
-  requiredDocuments,
-  school,
-} from '../data/school'
+import { useSchool } from '../context/SchoolContext'
 
 export default function Admissions() {
+  const { db } = useSchool()
+  const { admissionDates, admissionFaqs, admissionSteps, eligibility, images, requiredDocuments, school } = db.site
+  const { academicYear, admissionsOpen } = db.settings
   return (
     <div>
       <PageHero
         eyebrow="Admissions"
-        title={`Join Jawahar Vidyalayam for ${school.academicYear}`}
+        title={`Join ${school.name} for ${academicYear}`}
         subtitle="A transparent process: enquire, apply, interact, enrol. Every application receives an Application ID."
         image={images.kids}
       />
+      {admissionsOpen ? null : (
+        <p className="bg-gold-light/40 text-navy text-center text-sm font-semibold py-3 px-4">
+          Admissions for {academicYear} are currently closed. You can still track an existing application.
+        </p>
+      )}
 
       <section className="py-16">
         <div className="mx-auto max-w-6xl px-4">

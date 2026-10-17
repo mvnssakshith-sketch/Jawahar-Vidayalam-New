@@ -41,9 +41,10 @@ service cloud.firestore {
       // Application tracking by exact Application ID.
       allow get: if col == 'admissions';
 
-      // Public forms: online application, contact/enquiry, event registration.
+      // Public forms: online application, contact enquiry, event registration.
       allow create: if (col == 'admissions' && request.resource.data.status == 'Submitted')
-        || col in ['contacts', 'enquiries', 'eventRegistrations'];
+        || (col == 'enquiries' && request.resource.data.status == 'New')
+        || col == 'eventRegistrations';
 
       allow write: if schoolData(col) && isAdmin();
 

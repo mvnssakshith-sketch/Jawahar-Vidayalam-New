@@ -2,14 +2,15 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { GoldButton, PageHero } from '../components/ui/Blocks'
 import { useSchool } from '../context/SchoolContext'
-import { images } from '../data/school'
-import { uid } from '../data/store'
 
-const classes = ['Nursery', 'LKG', 'UKG', 'Class I', 'Class II', 'Class III', 'Class IV', 'Class V', 'Class VI', 'Class VII', 'Class VIII', 'Class IX', 'Class X', 'Class XI', 'Class XII']
+const classes = ['Nursery', 'LKG', 'UKG', 'Class I', 'Class II', 'Class III', 'Class IV', 'Class V', 'Class VI', 'Class VII', 'Class VIII', 'Class IX', 'Class X']
 
 export default function Apply() {
-  const { update } = useSchool()
+  const { db, update } = useSchool()
+  const { images } = db.site
+  const { academicYear, admissionsOpen } = db.settings
   const [submitted, setSubmitted] = useState(null)
+  const [saving, setSaving] = useState(false)
   const [form, setForm] = useState({
     studentName: '',
     dob: '',
@@ -27,10 +28,11 @@ export default function Apply() {
     setForm((f) => ({ ...f, [key]: value }))
   }
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault()
-    const id = `JV-2026-${String(Math.floor(1000 + Math.random() * 9000))}`
-    update((db) => {
+    setSaving(true)
+    const id = `JV-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`
+    const saved = await update((db) => {
       db.admissions.unshift({
         id,
         ...form,
@@ -40,7 +42,25 @@ export default function Apply() {
       })
       return db
     })
-    setSubmitted(id)
+    setSaving(false)
+    if (saved) setSubmitted(id)
+  }
+
+  if (!admissionsOpen) {
+    return (
+      <div>
+        <PageHero eyebrow="Online application" title="Admissions are closed" image={images.kids} />
+        <section className="py-16">
+          <div className="mx-auto max-w-xl px-4 text-center border border-cream-dark p-10">
+            <p className="text-muted">Online applications for {academicYear} are not being accepted right now. Please contact the school office for details.</p>
+            <div className="mt-8 flex justify-center gap-3">
+              <GoldButton to="/contact">Contact the office</GoldButton>
+              <Link to="/admissions/track" className="px-5 py-2.5 text-sm font-semibold text-forest">Track an application</Link>
+            </div>
+          </div>
+        </section>
+      </div>
+    )
   }
 
   if (submitted) {
@@ -104,7 +124,7 @@ export default function Apply() {
             <span className="text-xs text-muted">In production, files would go to secure cloud storage. This demo records document names.</span>
           </label>
           <div className="sm:col-span-2">
-            <GoldButton type="submit">Submit application</GoldButton>
+            <GoldButton type="submit" disabled={saving}>{saving ? 'Submitting…' : 'Submit application'}</GoldButton>
             <p className="text-xs text-muted mt-3">A copy is stored for the admissions office. Application ID format: JV-2026-XXXX. Ref {uid('ref')}</p>
           </div>
         </form>

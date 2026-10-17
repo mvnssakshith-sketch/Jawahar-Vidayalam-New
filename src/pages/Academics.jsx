@@ -1,13 +1,6 @@
 import { Link, useParams } from 'react-router-dom'
 import { GoldButton, PageHero, SectionEyebrow, SectionTitle } from '../components/ui/Blocks'
-import {
-  academicCalendar,
-  examSystem,
-  images,
-  programs,
-  schoolTimings,
-  subjectsByStage,
-} from '../data/school'
+import { useSite } from '../context/SchoolContext'
 import { stateSyllabus } from '../data/syllabus'
 
 const extra = {
@@ -25,6 +18,7 @@ const stageToSyllabus = {
 }
 
 export default function Academics() {
+  const { academicCalendar, examSystem, images, programs, schoolTimings, subjectsByStage } = useSite()
   const { program } = useParams()
   const selected = programs.find((p) => p.slug === program)
   const relatedSyllabus = selected

@@ -2,27 +2,31 @@ import { Link, useParams } from 'react-router-dom'
 import Photo from '../components/Photo'
 import { GoldButton, PageHero, SectionTitle } from '../components/ui/Blocks'
 import { useSchool } from '../context/SchoolContext'
-import { images } from '../data/school'
+import { uid } from '../data/store'
 
 export default function Events() {
   const { id } = useParams()
   const { db, update } = useSchool()
+  const { images } = db.site
   const events = db.events
   const event = events.find((e) => e.id === id)
 
-  function register(ev) {
+  async function register(ev) {
     const name = window.prompt('Your name for event registration')
     if (!name) return
-    update((d) => {
-      d.eventRegistrations.push({
-        id: `reg-${Date.now()}`,
+    const phone = window.prompt('Phone number (the office will call to confirm)') || ''
+    const saved = await update((d) => {
+      d.eventRegistrations.unshift({
+        id: uid('reg'),
         eventId: ev.id,
+        eventName: ev.name,
         name,
+        phone,
         date: new Date().toISOString().slice(0, 10),
       })
       return d
     })
-    window.alert('Registration recorded. The events office will confirm by email.')
+    if (saved) window.alert('Registration recorded. The school office will contact you to confirm.')
   }
 
   if (event) {

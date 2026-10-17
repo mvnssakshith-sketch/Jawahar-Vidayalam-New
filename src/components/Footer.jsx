@@ -1,9 +1,10 @@
 import { Globe, Mail, MapPin, Phone, Play } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { school } from '../data/school'
+import { useSite } from '../context/SchoolContext'
 import Logo from './Logo'
 
 export default function Footer() {
+  const { school } = useSite()
   return (
     <footer className="bg-forest-deep text-white">
       <div className="brand-stripe" />

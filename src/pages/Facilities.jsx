@@ -1,8 +1,9 @@
 import { PageHero, SectionEyebrow, SectionTitle } from '../components/ui/Blocks'
 import Photo from '../components/Photo'
-import { facilities, images } from '../data/school'
+import { useSite } from '../context/SchoolContext'
 
 export default function Facilities() {
+  const { facilities, images } = useSite()
   return (
     <div>
       <PageHero

@@ -1,3 +1,5 @@
+import { DEFAULT_SITE } from './site.js'
+
 export const COLLECTIONS = [
   'teachers',
   'parents',
@@ -19,7 +21,6 @@ export const COLLECTIONS = [
   'leaveRequests',
   'admissions',
   'enquiries',
-  'contacts',
   'timetable',
   'messages',
   'eventRegistrations',
@@ -28,7 +29,6 @@ export const COLLECTIONS = [
 export const PUBLIC_COLLECTIONS = ['notices', 'events', 'gallery', 'busRoutes']
 
 export const DEFAULT_SETTINGS = {
-  schoolName: 'Jawahar Vidyalayam',
   academicYear: '2026–27',
   admissionsOpen: true,
 }
@@ -37,6 +37,7 @@ export function emptyDb() {
   return {
     ...Object.fromEntries(COLLECTIONS.map((c) => [c, []])),
     settings: { ...DEFAULT_SETTINGS },
+    site: DEFAULT_SITE,
   }
 }
 
@@ -264,7 +265,6 @@ export function buildSeed() {
     leaveRequests,
     admissions,
     enquiries: [],
-    contacts: [],
     timetable,
     messages,
     eventRegistrations: [],

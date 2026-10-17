@@ -2,7 +2,14 @@ import { useState } from 'react'
 import { useSchool } from '../../context/SchoolContext'
 import { uid } from '../../data/store'
 
-export default function ResourceManager({ title, collection, columns, fields, idPrefix }) {
+// List fields are edited one item per line; blank lines are dropped on save.
+function cleanLists(form) {
+  return Object.fromEntries(
+    Object.entries(form).map(([k, v]) => [k, Array.isArray(v) ? v.map((s) => String(s).trim()).filter(Boolean) : v]),
+  )
+}
+
+export default function ResourceManager({ title, collection, columns, fields, idPrefix, allowCreate = true }) {
   const { db, update } = useSchool()
   const rows = db[collection] || []
   const [editing, setEditing] = useState(null)
@@ -19,19 +26,20 @@ export default function ResourceManager({ title, collection, columns, fields, id
     setEditing(row.id)
   }
 
-  function save(e) {
+  async function save(e) {
     e.preventDefault()
-    update((next) => {
+    const values = cleanLists(form)
+    const ok = await update((next) => {
       const list = next[collection]
       if (editing === 'new') {
-        list.unshift({ id: uid(idPrefix), ...form })
+        list.unshift({ id: uid(idPrefix), ...values })
       } else {
         const i = list.findIndex((r) => r.id === editing)
-        if (i >= 0) list[i] = { ...list[i], ...form }
+        if (i >= 0) list[i] = { ...list[i], ...values }
       }
       return next
     })
-    setEditing(null)
+    if (ok) setEditing(null)
   }
 
   function remove(id) {
@@ -46,22 +54,26 @@ export default function ResourceManager({ title, collection, columns, fields, id
     <div>
       <div className="flex items-center justify-between gap-3 mb-6">
         <h1 className="font-display text-3xl text-forest">{title}</h1>
-        <button onClick={startCreate} className="bg-forest text-white px-4 py-2 text-sm font-semibold">
-          Add
-        </button>
+        {allowCreate ? (
+          <button onClick={startCreate} className="bg-forest text-white px-4 py-2 text-sm font-semibold">
+            Add
+          </button>
+        ) : null}
       </div>
       {editing ? (
         <form onSubmit={save} className="bg-white p-5 mb-6 grid sm:grid-cols-2 gap-3 border border-cream-dark">
           {fields.map((f) => (
             <label key={f.key} className="text-sm">
               {f.label}
-                    {Array.isArray(form[f.key]) ? (
-                      <input
-                        className="mt-1 w-full border px-3 py-2"
-                        value={form[f.key].join(', ')}
-                        onChange={(e) => setForm({ ...form, [f.key]: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) })}
-                      />
-                    ) : f.type === 'textarea' ? (
+              {Array.isArray(form[f.key]) ? (
+                <textarea
+                  className="mt-1 w-full border px-3 py-2"
+                  rows={3}
+                  placeholder="One per line"
+                  value={form[f.key].join('\n')}
+                  onChange={(e) => setForm({ ...form, [f.key]: e.target.value.split('\n') })}
+                />
+              ) : f.type === 'textarea' ? (
                 <textarea
                   className="mt-1 w-full border px-3 py-2"
                   value={form[f.key] ?? ''}
@@ -108,11 +120,18 @@ export default function ResourceManager({ title, collection, columns, fields, id
             </tr>
           </thead>
           <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td colSpan={columns.length + 1} className="p-6 text-center text-muted">
+                  No records yet.
+                </td>
+              </tr>
+            ) : null}
             {rows.map((row) => (
               <tr key={row.id} className="border-t border-cream-dark">
                 {columns.map((c) => (
                   <td key={c.key} className="p-3">
-                    {Array.isArray(row[c.key]) ? row[c.key].join(', ') : String(row[c.key] ?? '—')}
+                    {c.render ? c.render(row) : Array.isArray(row[c.key]) ? row[c.key].join(', ') : String(row[c.key] ?? '—')}
                   </td>
                 ))}
                 <td className="p-3 text-right whitespace-nowrap">

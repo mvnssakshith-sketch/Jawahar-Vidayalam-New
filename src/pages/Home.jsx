@@ -4,19 +4,11 @@ import Logo from '../components/Logo'
 import Photo from '../components/Photo'
 import { GoldButton, SectionEyebrow, SectionTitle } from '../components/ui/Blocks'
 import { useSchool } from '../context/SchoolContext'
-import {
-  achievements,
-  facilities,
-  images,
-  programs,
-  school,
-  testimonials,
-  whyChoose,
-} from '../data/school'
 
 export default function Home() {
   const { db } = useSchool()
-  const notices = db.notices.slice(0, 4)
+  const { achievements, facilities, images, programs, school, testimonials, whyChoose } = db.site
+  const notices = db.notices.filter((n) => n.audience === 'Public' || n.audience === 'All').slice(0, 4)
   const events = db.events.slice(0, 3)
 
   return (
@@ -41,9 +33,7 @@ export default function Home() {
               <p className="mt-4 text-xl md:text-2xl font-display tracking-[0.12em] uppercase text-gold-light">
                 {school.motto}
               </p>
-              <p className="mt-4 max-w-xl text-lg text-white/85">
-                State Board education for {school.classes} — nurturing knowledge, humility, and wisdom since {school.established}.
-              </p>
+              <p className="mt-4 max-w-xl text-lg text-white/85">{school.home.heroText}</p>
               <div className="mt-8 flex flex-wrap gap-3">
                 <GoldButton to="/admissions/apply">Apply for Admission</GoldButton>
                 <Link
@@ -72,16 +62,12 @@ export default function Home() {
 
       <section className="py-20">
         <div className="mx-auto max-w-7xl px-4 grid lg:grid-cols-2 gap-12 items-center">
-          <Photo src={images.campus} alt="Jawahar Vidyalayam campus" className="rounded-sm h-[420px] w-full object-cover" />
+          <Photo src={images.campus} alt={`${school.name} campus`} className="rounded-sm h-[420px] w-full object-cover" />
           <div>
             <SectionEyebrow>About the school</SectionEyebrow>
-            <SectionTitle>A community of learning since {school.established}</SectionTitle>
-            <p className="mt-5 text-muted leading-relaxed">
-              Jawahar Vidyalayam, Aswaraopet, was founded in {school.established} on the ideals of {school.mottoMeaning}. We give children a complete education — strong academics, cultural depth, physical fitness, and the habit of doing the right thing when nobody is watching.
-            </p>
-            <p className="mt-4 text-muted leading-relaxed">
-              Our campus is designed for curiosity: laboratories, a living library, sports fields, studios, and quiet classrooms. Parents are partners, not visitors.
-            </p>
+            <SectionTitle>{school.home.aboutTitle}</SectionTitle>
+            <p className="mt-5 text-muted leading-relaxed">{school.home.about}</p>
+            {school.home.about2 ? <p className="mt-4 text-muted leading-relaxed">{school.home.about2}</p> : null}
             <Link to="/about" className="mt-6 inline-flex items-center gap-2 text-forest font-semibold">
               Read our story <ArrowRight className="h-4 w-4" />
             </Link>
@@ -94,7 +80,7 @@ export default function Home() {
           <div>
             <SectionEyebrow>Principal’s message</SectionEyebrow>
             <SectionTitle>{school.principal.name}</SectionTitle>
-            <p className="text-sm text-gold-dark mt-1">{school.principal.title}, Jawahar Vidyalayam</p>
+            <p className="text-sm text-gold-dark mt-1">{school.principal.title}, {school.name}</p>
             <Quote className="text-gold mt-6 h-8 w-8" />
             <p className="mt-3 text-lg text-forest leading-relaxed font-display italic">{school.principal.message}</p>
             <Link to="/about" className="mt-6 inline-flex font-semibold text-forest">Full leadership messages →</Link>
@@ -103,7 +89,7 @@ export default function Home() {
             <div className="aspect-[3/4] overflow-hidden rounded-sm bg-white border border-cream-dark shadow-sm">
               <Photo
                 src={images.principal}
-                alt="Principal Inuganti Mythali"
+                alt={`${school.principal.title} ${school.principal.name}`}
                 className="h-full w-full object-cover object-[center_12%]"
               />
             </div>
@@ -130,7 +116,7 @@ export default function Home() {
       <section className="bg-forest-deep text-white py-20">
         <div className="mx-auto max-w-7xl px-4">
           <SectionEyebrow>Academic programmes</SectionEyebrow>
-          <h2 className="font-display text-4xl md:text-5xl mt-2">Nursery to Class XII</h2>
+          <h2 className="font-display text-4xl md:text-5xl mt-2">{school.classes}</h2>
           <p className="mt-3 text-white/70 max-w-2xl">Telangana State syllabus with SCERT textbooks. See the full class-wise subject list under Academics → State Syllabus.</p>
           <Link to="/academics/syllabus" className="inline-flex mt-4 text-gold-light font-semibold">View State syllabus →</Link>
           <div className="mt-10 grid md:grid-cols-2 lg:grid-cols-5 gap-4">

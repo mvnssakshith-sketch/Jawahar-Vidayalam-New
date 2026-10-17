@@ -2,10 +2,10 @@ import { useMemo, useState } from 'react'
 import Photo from '../components/Photo'
 import { PageHero, SectionTitle } from '../components/ui/Blocks'
 import { useSchool } from '../context/SchoolContext'
-import { images } from '../data/school'
 
 export default function Gallery() {
   const { db } = useSchool()
+  const { images } = db.site
   const [cat, setCat] = useState('All')
   const categories = useMemo(() => ['All', ...Array.from(new Set(db.gallery.map((g) => g.category)))], [db.gallery])
   const items = cat === 'All' ? db.gallery : db.gallery.filter((g) => g.category === cat)
