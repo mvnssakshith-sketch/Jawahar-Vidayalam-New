@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth'
-import { doc, getDoc } from 'firebase/firestore'
+import { clearIndexedDbPersistence, doc, getDoc, terminate } from 'firebase/firestore'
 import { auth, firestore } from '../firebase'
 
 const AuthContext = createContext(null)
@@ -25,6 +25,10 @@ function authErrorMessage(err) {
       return 'Network error. Check your internet connection.'
     case 'auth/operation-not-allowed':
       return 'Email/password sign-in is not enabled in Firebase.'
+    case 'resource-exhausted':
+      return 'The school server has reached its daily usage limit. Please try again later.'
+    case 'unavailable':
+      return 'Cannot reach the school server. Check your internet connection.'
     default:
       return err?.message || 'Sign-in failed.'
   }
@@ -76,8 +80,13 @@ export function AuthProvider({ children }) {
       },
       async logout() {
         await signOut(auth)
-        setUser(null)
-        navigate('/login')
+        try {
+          await terminate(firestore)
+          await clearIndexedDbPersistence(firestore)
+        } catch {
+          /* cache is cleared on a best-effort basis */
+        }
+        window.location.assign('/login')
       },
     }),
     [loading, navigate, user],

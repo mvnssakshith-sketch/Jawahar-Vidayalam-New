@@ -1,7 +1,7 @@
 import { initializeApp } from 'firebase/app'
 import { getAnalytics, isSupported } from 'firebase/analytics'
 import { getAuth } from 'firebase/auth'
-import { initializeFirestore } from 'firebase/firestore'
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore'
 
 const firebaseConfig = {
   apiKey: 'AIzaSyCPdJECClS-ZSo397of272D1wC_11m9h24',
@@ -15,7 +15,12 @@ const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig)
 export const auth = getAuth(app)
-export const firestore = initializeFirestore(app, { ignoreUndefinedProperties: true })
+// The on-device cache lets listeners resume after a reload and download only changed
+// documents, instead of re-reading every collection (Firestore bills per document read).
+export const firestore = initializeFirestore(app, {
+  ignoreUndefinedProperties: true,
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+})
 
 isSupported()
   .then((ok) => ok && getAnalytics(app))

@@ -28,6 +28,14 @@ export const COLLECTIONS = [
 
 export const PUBLIC_COLLECTIONS = ['notices', 'events', 'gallery', 'busRoutes']
 
+const ADMIN_ONLY = ['subjects', 'admissions', 'enquiries', 'eventRegistrations']
+
+// Collections each signed-in role subscribes to; fewer listeners means fewer billed reads.
+export function collectionsFor(role) {
+  if (role === 'admin') return COLLECTIONS
+  return COLLECTIONS.filter((c) => !ADMIN_ONLY.includes(c))
+}
+
 export const DEFAULT_SETTINGS = {
   academicYear: '2026–27',
   admissionsOpen: true,

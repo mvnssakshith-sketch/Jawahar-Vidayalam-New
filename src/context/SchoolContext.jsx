@@ -2,13 +2,20 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { collection, doc, getDoc, onSnapshot, writeBatch } from 'firebase/firestore'
 import { firestore } from '../firebase'
 import { withSiteDefaults } from '../data/site'
-import { COLLECTIONS, DEFAULT_SETTINGS, PUBLIC_COLLECTIONS, emptyDb, seedCollections } from '../data/store'
+import { COLLECTIONS, DEFAULT_SETTINGS, PUBLIC_COLLECTIONS, collectionsFor, emptyDb, seedCollections } from '../data/store'
 import { useAuth } from './AuthContext'
 
 const SchoolContext = createContext(null)
 const SETTINGS_REF = () => doc(firestore, 'meta', 'settings')
 const SITE_REF = () => doc(firestore, 'meta', 'site')
 const BATCH_LIMIT = 450
+const QUOTA_MESSAGE = 'The school server has reached its daily usage limit. Some information may be missing — please try again later.'
+
+function errorMessage(err) {
+  if (err?.code === 'resource-exhausted') return QUOTA_MESSAGE
+  if (err?.code === 'permission-denied') return 'You do not have permission to make this change.'
+  return 'Could not save to the server. Please check your connection and try again.'
+}
 
 function byOrder(a, b) {
   return (a._order ?? 0) - (b._order ?? 0)
@@ -75,6 +82,7 @@ async function commit(ops) {
 export function SchoolProvider({ children }) {
   const { user } = useAuth()
   const userId = user?.id
+  const role = user?.role
   const [db, setDb] = useState(emptyDb)
   const [ready, setReady] = useState(false)
   const [syncError, setSyncError] = useState('')
@@ -85,9 +93,13 @@ export function SchoolProvider({ children }) {
   }, [db])
 
   useEffect(() => {
-    const names = userId ? COLLECTIONS : PUBLIC_COLLECTIONS
+    const names = userId ? collectionsFor(role) : PUBLIC_COLLECTIONS
     const pending = new Set([...names, 'settings', 'site'])
-    const loaded = (name) => {
+    const loaded = (name, err) => {
+      if (err) {
+        console.error(`Firestore: could not load "${name}"`, err)
+        if (err.code === 'resource-exhausted') setSyncError(QUOTA_MESSAGE)
+      }
       pending.delete(name)
       if (pending.size === 0) setReady(true)
     }
@@ -104,10 +116,7 @@ export function SchoolProvider({ children }) {
           setDb((prev) => ({ ...prev, [name]: rows }))
           loaded(name)
         },
-        (err) => {
-          console.error(`Firestore: could not load "${name}"`, err)
-          loaded(name)
-        },
+        (err) => loaded(name, err),
       ),
     )
     unsubs.push(
@@ -117,10 +126,7 @@ export function SchoolProvider({ children }) {
           setDb((prev) => ({ ...prev, settings: { ...DEFAULT_SETTINGS, ...(snap.data() || {}) } }))
           loaded('settings')
         },
-        (err) => {
-          console.error('Firestore: could not load settings', err)
-          loaded('settings')
-        },
+        (err) => loaded('settings', err),
       ),
       onSnapshot(
         SITE_REF(),
@@ -128,40 +134,18 @@ export function SchoolProvider({ children }) {
           setDb((prev) => ({ ...prev, site: withSiteDefaults(snap.data()) }))
           loaded('site')
         },
-        (err) => {
-          console.error('Firestore: could not load website content', err)
-          loaded('site')
-        },
+        (err) => loaded('site', err),
       ),
     )
     return () => unsubs.forEach((u) => u())
-  }, [userId])
-
-  const pendingWrites = useRef(0)
-
-  useEffect(() => {
-    const warn = (e) => {
-      if (pendingWrites.current > 0) e.preventDefault()
-    }
-    window.addEventListener('beforeunload', warn)
-    return () => window.removeEventListener('beforeunload', warn)
-  }, [])
+  }, [userId, role])
 
   const persist = useCallback((ops) => {
     if (!ops.length) return Promise.resolve()
     setSyncError('')
-    pendingWrites.current += 1
-    const done = () => {
-      pendingWrites.current -= 1
-    }
-    return commit(ops).then(done, (err) => {
-      done()
+    return commit(ops).catch((err) => {
       console.error('Firestore write failed', err)
-      setSyncError(
-        err?.code === 'permission-denied'
-          ? 'You do not have permission to make this change.'
-          : 'Could not save to the server. Please check your connection and try again.',
-      )
+      setSyncError(errorMessage(err))
       throw err
     })
   }, [])
